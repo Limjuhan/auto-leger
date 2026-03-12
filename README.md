@@ -5,6 +5,19 @@
 
 🌐 **배포 URL**: https://auto-leger-production.up.railway.app
 📦 **GitHub**: https://github.com/Limjuhan/auto-leger
+⏱️ **개발 기간**: 1일 (기획 → 구현 → 배포 → 자동화 연동까지)
+
+---
+
+## 🚀 하루 만에 완성한 이유
+
+이 프로젝트는 **아이디어 구체화부터 실제 배포 및 자동화 연동까지 하루 안에 완료**했습니다.
+
+빠른 개발이 가능했던 핵심 결정들:
+- **JPA** 선택 → 반복적인 CRUD SQL 작성 없이 메서드명 기반 쿼리 자동 생성으로 개발 속도 극대화
+- **Thymeleaf** 선택 → 프론트/백 분리 없이 하나의 프로젝트에서 화면까지 완성
+- **Railway** 선택 → GitHub push 한 번으로 빌드·배포 자동화, 인프라 설정 시간 최소화
+- **MacroDroid** 선택 → 별도 앱 개발 없이 기존 무료 앱으로 SMS 자동화 완성
 
 ---
 
@@ -23,39 +36,75 @@
 
 ---
 
-## 🛠️ 기술 스택 및 선택 근거
+## 🛠️ 기술 선택 근거
 
-| 영역 | 기술 | 선택 근거 |
-|------|------|-----------|
-| Backend | Spring Boot 3.2 | 국내 기업 표준 스택, 빠른 REST API 구성 |
-| ORM | Spring Data JPA | SQL 직접 작성 없이 객체 중심 DB 접근, 유지보수 용이 |
-| Database | MySQL 8 | 관계형 데이터(거래↔카테고리) 표현에 적합, Railway 공식 지원 |
-| Frontend | Thymeleaf | 서버사이드 렌더링으로 별도 API 서버 분리 없이 빠른 개발 가능 |
-| 차트 | Chart.js | 경량 라이브러리, CDN으로 추가 빌드 설정 불필요 |
-| 자동화 | MacroDroid | Android에서 SMS 수신 이벤트를 HTTP 요청으로 연결 가능한 무료 앱 |
-| 배포 | Railway | GitHub 연동 자동 배포, MySQL 내장 제공, 무료 크레딧으로 개인 프로젝트에 적합 |
-| 컨테이너 | Docker | 로컬/서버 환경 차이 없는 일관된 배포 환경 보장 |
+### Backend — Spring Boot 3.2
+> 대안: Django(Python), Node.js/Express
+
+국내 기업 환경의 표준 스택. 풍부한 생태계(Spring Security, JPA, Actuator 등)와 구조화된 레이어 아키텍처(Controller-Service-Repository)로 확장성을 확보하면서도 빠른 개발이 가능.
 
 ---
 
-## 💡 기술적 문제 해결
+### ORM — Spring Data JPA
+> 대안: MyBatis
+
+| | JPA | MyBatis |
+|--|-----|---------|
+| SQL 작성 | 메서드명으로 자동 생성 | 직접 작성 필요 |
+| 생산성 | 단순 CRUD에서 높음 | 복잡한 쿼리에서 유리 |
+| 객체 매핑 | 자동 (ORM) | 수동 ResultMap |
+| 학습 비용 | 높음 | 낮음 |
+
+이 프로젝트의 쿼리는 월별 조회, 카테고리 집계 수준으로 복잡도가 낮아 **JPA의 자동 쿼리 생성이 개발 속도에 직접적으로 유리**. `findByTxDateBetweenOrderByTxDateDesc()` 한 줄로 정렬된 기간 조회가 가능.
+
+---
+
+### Database — MySQL 8
+> 대안: MongoDB(NoSQL), PostgreSQL
+
+거래 데이터와 카테고리 간의 **명확한 관계(N:1)** 가 존재하고, 금액·날짜 기반 집계 쿼리가 필요한 구조. 스키마가 고정적이므로 관계형 DB가 적합. Railway에서 MySQL을 공식 서비스로 제공하여 별도 설정 없이 연동 가능.
+
+---
+
+### Frontend — Thymeleaf
+> 대안: React, Vue.js
+
+React/Vue는 별도 프론트엔드 서버 구성 및 API 통신 설계가 필요해 **하루 개발에서 오버스펙**. Thymeleaf는 Spring Boot와 네이티브 통합되어 Controller에서 Model에 데이터를 담으면 바로 HTML에 바인딩되므로 빠른 화면 구성 가능.
+
+---
+
+### 배포 — Railway + Docker
+> 대안: AWS EC2, Heroku, GCP
+
+| | Railway | AWS EC2 | Heroku |
+|--|---------|---------|--------|
+| GitHub 자동 배포 | ✅ | 별도 설정 | ✅ |
+| MySQL 내장 | ✅ | 별도 RDS | ❌ |
+| 무료 플랜 | $5 크레딧/월 | 없음 | 유료화 |
+| 초기 설정 난이도 | 낮음 | 높음 | 낮음 |
+
+Docker 멀티스테이지 빌드로 로컬/배포 환경 차이를 없애고, Railway의 GitHub 연동으로 `git push` 한 번에 자동 재배포.
+
+---
+
+## 💡 개발 중 해결한 문제들
 
 ### 1. MacroDroid JSON 줄바꿈 오류
-SMS 본문의 개행 문자(`\n`)가 JSON 문자열에 그대로 들어가 파싱 오류 발생.
-→ `Content-Type: application/x-www-form-urlencoded` 방식으로 전환하여 URL 인코딩으로 해결.
-→ 하위 호환을 위해 JSON 방식도 별도 엔드포인트로 유지.
+SMS 본문의 개행 문자(`\n`)가 JSON 문자열에 이스케이프 없이 삽입되어 HTTP 400 발생.
+→ `application/x-www-form-urlencoded` 방식으로 전환. URL 인코딩이 자동으로 처리됨.
+→ 기존 JSON 방식은 별도 엔드포인트(`consumes`로 분기)로 유지해 테스트 편의성 확보.
 
 ### 2. SMS 형식 다양성 대응
-현대카드 SMS는 레이블 있는 형식(가맹점: XXX)과 없는 형식 두 가지가 존재.
-→ 레이블 방식 우선 파싱 후, 실패 시 "금액 줄 앞 줄 탐색" 폴백 로직으로 두 형식 모두 지원.
+현대카드 SMS는 레이블 있는 형식(`가맹점: XXX`)과 무레이블 형식 두 가지가 존재.
+→ 레이블 방식 우선 파싱 후, 실패 시 "금액 줄 앞 줄 역탐색" 폴백 로직으로 두 형식 모두 커버.
 
 ### 3. Docker ENTRYPOINT 환경변수 치환 오류
-`ENTRYPOINT ["java", "-Dspring.profiles.active=${VAR}"]` exec 형식은 Shell 변수 치환이 되지 않아 항상 로컬 프로필로 실행됨.
-→ Spring Boot의 환경변수 자동 바인딩(`SPRING_PROFILES_ACTIVE`)을 활용하여 `-D` 옵션 제거로 해결.
+`ENTRYPOINT ["java", "-Dspring.profiles.active=${VAR}"]` exec 형식은 Shell 변수 치환이 안 돼 항상 로컬 프로필로 실행.
+→ Spring Boot의 환경변수 자동 바인딩(`SPRING_PROFILES_ACTIVE`) 활용, `-D` 옵션 제거로 해결.
 
-### 4. JPA 테이블 생성 순서 문제
-`data.sql` 실행 시점이 Hibernate 테이블 생성 이전이어서 카테고리 초기 데이터 INSERT 실패.
-→ `spring.jpa.defer-datasource-initialization: true` 설정으로 테이블 생성 후 SQL 실행 순서 보장.
+### 4. JPA + data.sql 초기화 순서 문제
+Hibernate 테이블 생성 전에 `data.sql`이 실행되어 카테고리 INSERT 실패.
+→ `spring.jpa.defer-datasource-initialization: true` 로 테이블 생성 완료 후 SQL 실행 순서 보장.
 
 ---
 
@@ -85,4 +134,4 @@ mvn spring-boot:run
 http://localhost:8080
 ```
 
-> `application.yml` 기본 설정: MySQL 127.0.0.1:3307, root/1234, API 키 `my-secret-key-1234`
+> 기본 설정: MySQL 127.0.0.1:3307 / root / 1234 / API 키 `my-secret-key-1234`
