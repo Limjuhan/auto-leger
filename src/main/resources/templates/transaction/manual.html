@@ -1,30 +1,30 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<head th:replace="~{fragments/layout :: head('알림톡 입력')}"></head>
+<head th:replace="~{fragments/layout :: head('SMS 수동 입력')}"></head>
 <body>
 
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <main class="main-content">
-    <h5 class="fw-bold mb-4"><i class="bi bi-chat-dots me-2"></i>현대카드 알림톡 입력</h5>
+    <h5 class="fw-bold mb-4"><i class="bi bi-phone me-2"></i>SMS 수동 입력</h5>
 
     <!-- Step 1: 붙여넣기 -->
     <div class="card p-4 mb-4">
-        <div class="fw-semibold mb-1">STEP 1. 알림톡 텍스트 붙여넣기</div>
+        <div class="fw-semibold mb-1">STEP 1. 현대카드 SMS 문자 붙여넣기</div>
         <div class="text-muted small mb-3">
-            카카오톡에서 현대카드 결제 알림 내용을 길게 눌러 복사 후 붙여넣으세요.
+            현대카드 결제 문자(SMS)를 복사 후 붙여넣으세요. MacroDroid 자동화가 안 될 때 사용하세요.
         </div>
 
         <!-- 참고 형식 -->
         <div class="alert alert-light border mb-3 small">
-            <strong>참고 형식 예시</strong><br>
-            <code>[현대카드]<br>일시불 승인<br>일시 : 25/03/12 14:30<br>가맹점 : 스타벅스 강남점<br>금액 : 5,500 원</code>
+            <strong>SMS 형식 예시</strong><br>
+            <code>[현대카드]<br>일시불승인<br>홍길동(1234)<br>03/12 14:30<br>스타벅스<br>5,500원</code>
         </div>
 
-        <form method="post" th:action="@{/kakao/parse}">
+        <form method="post" th:action="@{/manual/parse}">
             <textarea name="rawText" class="form-control font-monospace mb-3"
-                      rows="7" placeholder="알림톡 내용을 여기에 붙여넣으세요..."
+                      rows="7" placeholder="SMS 내용을 여기에 붙여넣으세요..."
                       th:text="${rawText}"></textarea>
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-magic me-1"></i>파싱하기
@@ -47,8 +47,8 @@
     <!-- Step 2: 확인 및 저장 (파싱 후 표시) -->
     <div th:if="${result != null}" class="card p-4">
         <div class="fw-semibold mb-3">STEP 2. 내용 확인 및 저장</div>
-        <form method="post" th:action="@{/kakao/save}">
-            <input type="hidden" name="source" value="KAKAO">
+        <form method="post" th:action="@{/manual/save}">
+            <input type="hidden" name="source" value="SMS">
             <div class="row g-3">
                 <div class="col-sm-6">
                     <label class="form-label">날짜 <span class="text-danger">*</span></label>
@@ -90,7 +90,7 @@
                 <button type="submit" class="btn btn-success px-4">
                     <i class="bi bi-save me-1"></i>저장
                 </button>
-                <a th:href="@{/kakao}" class="btn btn-outline-secondary">다시 입력</a>
+                <a th:href="@{/manual}" class="btn btn-outline-secondary">다시 입력</a>
             </div>
         </form>
     </div>

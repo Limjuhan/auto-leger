@@ -3,7 +3,7 @@ package com.ledger.controller;
 import com.ledger.dto.NotifyRequestDto;
 import com.ledger.dto.ParseResultDto;
 import com.ledger.dto.TransactionFormDto;
-import com.ledger.service.KakaoParserService;
+import com.ledger.service.SmsParserService;
 import com.ledger.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class NotifyController {
 
-    private final KakaoParserService kakaoParserService;
+    private final SmsParserService smsParserService;
     private final TransactionService transactionService;
 
     @Value("${ledger.api-key}")
@@ -44,7 +44,7 @@ public class NotifyController {
         }
 
         // 파싱
-        ParseResultDto result = kakaoParserService.parse(request.getRawText());
+        ParseResultDto result = smsParserService.parse(request.getRawText());
 
         if (!result.isSuccess()) {
             return ResponseEntity.badRequest()

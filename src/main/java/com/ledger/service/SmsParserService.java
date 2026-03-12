@@ -13,9 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 현대카드 SMS / 카카오 알림톡 파싱 서비스
+ * 현대카드 SMS 파싱 서비스
  *
- * [형식 A - 카카오 알림톡 / 레이블 있는 형식]
+ * [형식 A - 레이블 있는 형식]
  *   [현대카드]
  *   일시불 승인
  *   일시 : 25/03/12 14:30
@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * ※ 실제 SMS 도착 후 형식이 다르면 extractMerchantFromSms() 로직을 조정하세요.
  */
 @Service
-public class KakaoParserService {
+public class SmsParserService {
 
     // 가맹점이 아닌 줄 판별용 스킵 키워드
     private static final List<String> SKIP_KEYWORDS = Arrays.asList(
@@ -128,7 +128,7 @@ public class KakaoParserService {
         return null;
     }
 
-    // ─── 가맹점: 레이블 형식 (알림톡/레이블 SMS) ───
+    // ─── 가맹점: 레이블 형식 ───
     private String extractMerchant(String text) {
         Pattern[] patterns = {
                 Pattern.compile("가맹점\\s*[：:]+\\s*(.+)"),
@@ -153,7 +153,6 @@ public class KakaoParserService {
 
         for (int i = 1; i < lines.length; i++) {
             if (amountPattern.matcher(lines[i].trim()).find()) {
-                // 금액 줄 발견 → 위쪽으로 후보 탐색
                 for (int j = i - 1; j >= 0; j--) {
                     String candidate = lines[j].trim();
                     if (!candidate.isBlank() && isMerchantCandidate(candidate)) {
