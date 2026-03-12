@@ -1,6 +1,7 @@
 package com.ledger.service;
 
 import com.ledger.dto.ParseResultDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -32,6 +33,7 @@ import java.util.regex.Pattern;
  *
  * ※ 실제 SMS 도착 후 형식이 다르면 extractMerchantFromSms() 로직을 조정하세요.
  */
+@Slf4j
 @Service
 public class SmsParserService {
 
@@ -84,6 +86,7 @@ public class SmsParserService {
             LocalTime txTime = extractTime(rawText);
 
             if (amount == null || merchant == null) {
+                log.warn("[SMS 파싱 실패] 금액={}, 가맹점={}, 원문={}", amount, merchant, rawText);
                 return ParseResultDto.builder()
                         .success(false)
                         .rawText(rawText)
@@ -91,6 +94,7 @@ public class SmsParserService {
                         .build();
             }
 
+            log.info("[SMS 파싱 성공] 가맹점={}, 금액={}", merchant, amount);
             return ParseResultDto.builder()
                     .success(true)
                     .amount(amount)
@@ -102,6 +106,7 @@ public class SmsParserService {
                     .build();
 
         } catch (Exception e) {
+            log.error("[SMS 파싱 예외] 원문={}, 오류={}", rawText, e.getMessage(), e);
             return ParseResultDto.builder()
                     .success(false)
                     .rawText(rawText)
