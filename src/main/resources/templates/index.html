@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('대시보드')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0 fw-bold">
+            <span th:text="${year} + '년 ' + ${month} + '월 대시보드'"></span>
+        </h5>
+        <a th:href="@{/kakao}" class="btn btn-primary btn-sm">
+            <i class="bi bi-chat-dots me-1"></i>알림톡 입력
+        </a>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card p-3">
+                <div class="text-muted small mb-1">이번 달 지출</div>
+                <div class="fs-4 amount text-primary"
+                     th:text="${#numbers.formatInteger(monthlyTotal, 0, 'COMMA')} + '원'">0원</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card p-3">
+                <div class="text-muted small mb-1">거래 건수</div>
+                <div class="fs-4 amount"
+                     th:text="${recentTransactions.size()} + '건 (최근)'">0건</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- 카테고리 차트 -->
+        <div class="col-lg-5">
+            <div class="card p-3 h-100">
+                <div class="fw-semibold mb-3">카테고리별 지출</div>
+                <div th:if="${categoryStats.empty}" class="text-muted text-center py-4">
+                    이번 달 지출 내역이 없어요
+                </div>
+                <canvas th:unless="${categoryStats.empty}" id="categoryChart" height="220"></canvas>
+            </div>
+        </div>
+
+        <!-- 최근 거래내역 -->
+        <div class="col-lg-7">
+            <div class="card p-3">
+                <div class="fw-semibold mb-3">최근 거래내역</div>
+                <div th:if="${recentTransactions.empty}" class="text-muted text-center py-4">
+                    아직 등록된 내역이 없어요.<br>
+                    <a th:href="@{/kakao}" class="btn btn-sm btn-outline-primary mt-2">알림톡 붙여넣기</a>
+                </div>
+                <div th:unless="${recentTransactions.empty}" class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>날짜</th>
+                                <th>가맹점</th>
+                                <th>카테고리</th>
+                                <th class="text-end">금액</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="t : ${recentTransactions}">
+                                <td class="text-muted small"
+                                    th:text="${#temporals.format(t.txDate, 'MM/dd')}">03/12</td>
+                                <td th:text="${t.merchant}">스타벅스</td>
+                                <td>
+                                    <span th:if="${t.category != null}"
+                                          th:text="${t.category.icon + ' ' + t.category.name}"
+                                          class="badge rounded-pill"
+                                          th:style="'background-color:' + ${t.category.color}">식비</span>
+                                    <span th:unless="${t.category != null}" class="badge bg-secondary">미분류</span>
+                                </td>
+                                <td class="text-end amount"
+                                    th:text="${#numbers.formatInteger(t.amount, 0, 'COMMA')} + '원'">5,500원</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end mt-2">
+                    <a th:href="@{/transactions}" class="text-muted small">전체 보기 →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:inline="javascript">
+    const stats = /*[[${categoryStats}]]*/ [];
+    if (stats && stats.length > 0) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: stats.map(s => s.categoryName),
+                datasets: [{
+                    data: stats.map(s => s.total),
+                    backgroundColor: stats.map(s => s.color),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.label + ': ' + ctx.parsed.toLocaleString() + '원'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

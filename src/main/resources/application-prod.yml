@@ -1,0 +1,20 @@
+# Railway 배포 시 환경변수로 주입됨
+# Railway 대시보드에서 설정: SPRING_PROFILES_ACTIVE=prod
+spring:
+  datasource:
+    url: ${JDBC_DATABASE_URL}
+    username: ${JDBC_DATABASE_USERNAME}
+    password: ${JDBC_DATABASE_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+ledger:
+  api-key: ${LEDGER_API_KEY}   # Railway 환경변수에서 반드시 설정

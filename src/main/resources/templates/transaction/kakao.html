@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('알림톡 입력')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <h5 class="fw-bold mb-4"><i class="bi bi-chat-dots me-2"></i>현대카드 알림톡 입력</h5>
+
+    <!-- Step 1: 붙여넣기 -->
+    <div class="card p-4 mb-4">
+        <div class="fw-semibold mb-1">STEP 1. 알림톡 텍스트 붙여넣기</div>
+        <div class="text-muted small mb-3">
+            카카오톡에서 현대카드 결제 알림 내용을 길게 눌러 복사 후 붙여넣으세요.
+        </div>
+
+        <!-- 참고 형식 -->
+        <div class="alert alert-light border mb-3 small">
+            <strong>참고 형식 예시</strong><br>
+            <code>[현대카드]<br>일시불 승인<br>일시 : 25/03/12 14:30<br>가맹점 : 스타벅스 강남점<br>금액 : 5,500 원</code>
+        </div>
+
+        <form method="post" th:action="@{/kakao/parse}">
+            <textarea name="rawText" class="form-control font-monospace mb-3"
+                      rows="7" placeholder="알림톡 내용을 여기에 붙여넣으세요..."
+                      th:text="${rawText}"></textarea>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-magic me-1"></i>파싱하기
+            </button>
+        </form>
+    </div>
+
+    <!-- 파싱 실패 알림 -->
+    <div th:if="${result != null and !result.success}" class="alert alert-warning mb-4">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <span th:text="${result.errorMessage}">파싱 실패</span>
+        <div class="small mt-1">아래에서 직접 수정해서 저장하세요.</div>
+    </div>
+
+    <!-- 파싱 성공 알림 -->
+    <div th:if="${result != null and result.success}" class="alert alert-success mb-4">
+        <i class="bi bi-check-circle me-2"></i>파싱 성공! 아래 내용을 확인하고 저장하세요.
+    </div>
+
+    <!-- Step 2: 확인 및 저장 (파싱 후 표시) -->
+    <div th:if="${result != null}" class="card p-4">
+        <div class="fw-semibold mb-3">STEP 2. 내용 확인 및 저장</div>
+        <form method="post" th:action="@{/kakao/save}">
+            <input type="hidden" name="source" value="KAKAO">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label">날짜 <span class="text-danger">*</span></label>
+                    <input type="date" name="txDate" class="form-control"
+                           th:value="${form.txDate}" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">시간</label>
+                    <input type="time" name="txTime" class="form-control"
+                           th:value="${form.txTime}">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">금액 (원) <span class="text-danger">*</span></label>
+                    <input type="number" name="amount" class="form-control"
+                           th:value="${form.amount}" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">카테고리</label>
+                    <select name="categoryId" class="form-select">
+                        <option value="">선택 안함</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id}"
+                                th:text="${cat.icon + ' ' + cat.name}"
+                                th:selected="${cat.id == form.categoryId}">식비</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">가맹점명 <span class="text-danger">*</span></label>
+                    <input type="text" name="merchant" class="form-control"
+                           th:value="${form.merchant}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">메모</label>
+                    <input type="text" name="memo" class="form-control"
+                           th:value="${form.memo}" placeholder="선택 사항">
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success px-4">
+                    <i class="bi bi-save me-1"></i>저장
+                </button>
+                <a th:href="@{/kakao}" class="btn btn-outline-secondary">다시 입력</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

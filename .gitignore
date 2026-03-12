@@ -1,0 +1,8 @@
+target/
+*.class
+*.jar
+!app.jar
+.idea/
+*.iml
+.DS_Store
+application-local.yml

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('거래내역')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <!-- 헤더 + 월 네비게이션 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/transactions(year=${prevYear}, month=${prevMonth})}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <h5 class="mb-0 fw-bold" th:text="${year} + '년 ' + ${month} + '월'">2026년 3월</h5>
+            <a th:href="@{/transactions(year=${nextYear}, month=${nextMonth})}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/kakao}" class="btn btn-primary btn-sm">
+                <i class="bi bi-chat-dots me-1"></i>알림톡 입력
+            </a>
+            <a th:href="@{/transactions/new}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-plus me-1"></i>직접 입력
+            </a>
+        </div>
+    </div>
+
+    <!-- 월 합계 카드 -->
+    <div class="card p-3 mb-4 d-inline-block">
+        <span class="text-muted me-2">이번 달 합계</span>
+        <span class="fs-5 fw-bold text-primary"
+              th:text="${#numbers.formatInteger(monthlyTotal, 0, 'COMMA')} + '원'">0원</span>
+        <span class="text-muted ms-2" th:text="'(' + ${transactions.size()} + '건)'"></span>
+    </div>
+
+    <!-- 거래내역 테이블 -->
+    <div class="card">
+        <div th:if="${transactions.empty}" class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            이번 달 등록된 거래내역이 없어요.
+            <div class="mt-3">
+                <a th:href="@{/kakao}" class="btn btn-sm btn-primary me-2">알림톡 입력</a>
+                <a th:href="@{/transactions/new}" class="btn btn-sm btn-outline-primary">직접 입력</a>
+            </div>
+        </div>
+
+        <div th:unless="${transactions.empty}" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>날짜</th>
+                        <th>가맹점</th>
+                        <th>카테고리</th>
+                        <th>메모</th>
+                        <th class="text-end">금액</th>
+                        <th class="text-center">출처</th>
+                        <th class="text-center">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="t : ${transactions}">
+                        <td class="text-muted small">
+                            <span th:text="${#temporals.format(t.txDate, 'MM/dd')}">03/12</span>
+                            <span th:if="${t.txTime != null}"
+                                  th:text="' ' + ${#temporals.format(t.txTime, 'HH:mm')}"
+                                  class="text-muted" style="font-size:.8rem"></span>
+                        </td>
+                        <td th:text="${t.merchant}">스타벅스</td>
+                        <td>
+                            <span th:if="${t.category != null}"
+                                  th:text="${t.category.icon + ' ' + t.category.name}"
+                                  class="badge rounded-pill"
+                                  th:style="'background-color:' + ${t.category.color}">식비</span>
+                            <span th:unless="${t.category != null}" class="badge bg-light text-secondary">미분류</span>
+                        </td>
+                        <td class="text-muted small" th:text="${t.memo}"></td>
+                        <td class="text-end fw-bold"
+                            th:text="${#numbers.formatInteger(t.amount, 0, 'COMMA')} + '원'">5,500원</td>
+                        <td class="text-center">
+                            <span th:if="${t.source == 'KAKAO'}" class="badge bg-warning text-dark small">알림톡</span>
+                            <span th:unless="${t.source == 'KAKAO'}" class="badge bg-light text-secondary small">수동</span>
+                        </td>
+                        <td class="text-center">
+                            <a th:href="@{/transactions/{id}/edit(id=${t.id})}"
+                               class="btn btn-sm btn-outline-secondary py-0 me-1">수정</a>
+                            <form th:action="@{/transactions/{id}/delete(id=${t.id})}"
+                                  method="post" style="display:inline"
+                                  onsubmit="return confirm('삭제할까요?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0">삭제</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

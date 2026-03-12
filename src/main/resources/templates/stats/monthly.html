@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('월별 통계')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <h5 class="fw-bold mb-4"><i class="bi bi-bar-chart-line me-2"></i>월별 통계</h5>
+
+    <div class="row g-3">
+        <!-- 월별 지출 차트 -->
+        <div class="col-lg-7">
+            <div class="card p-4">
+                <div class="fw-semibold mb-3">최근 6개월 지출 추이</div>
+                <canvas id="monthlyChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- 이번 달 카테고리 순위 -->
+        <div class="col-lg-5">
+            <div class="card p-4">
+                <div class="fw-semibold mb-3">
+                    이번 달 카테고리별 지출
+                    <span class="text-muted small fw-normal"
+                          th:text="'(' + ${year} + '/' + ${month} + ')'"></span>
+                </div>
+
+                <div th:if="${categoryStats.empty}" class="text-muted text-center py-4">
+                    이번 달 데이터가 없어요.
+                </div>
+
+                <div th:unless="${categoryStats.empty}">
+                    <div th:each="stat, idx : ${categoryStats}" class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span th:text="${stat.icon + ' ' + stat.categoryName}">🍽️ 식비</span>
+                            <span class="fw-bold"
+                                  th:text="${#numbers.formatInteger(stat.total, 0, 'COMMA')} + '원'">5,000원</span>
+                        </div>
+                        <div class="progress" style="height:8px">
+                            <div class="progress-bar" role="progressbar"
+                                 th:style="'width: ' + ${categoryStats[0].total > 0 ? (stat.total * 100 / categoryStats[0].total) : 0} + '%; background-color: ' + ${stat.color}"
+                                 th:attr="aria-valuenow=${stat.total}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:inline="javascript">
+    const monthlyData = /*[[${monthlyTotals}]]*/ [];
+    if (monthlyData && monthlyData.length > 0) {
+        const labels = monthlyData.map(row => row[0] + '/' + String(row[1]).padStart(2, '0'));
+        const data   = monthlyData.map(row => row[2]);
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '지출 (원)',
+                    data: data,
+                    backgroundColor: '#0d6efd99',
+                    borderColor: '#0d6efd',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: val => val.toLocaleString() + '원'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

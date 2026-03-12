@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('거래내역 입력')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="d-flex align-items-center mb-4">
+        <a th:href="@{/transactions}" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h5 class="fw-bold mb-0"
+            th:text="${isEdit} ? '거래내역 수정' : '거래내역 직접 입력'">거래내역 입력</h5>
+    </div>
+
+    <div class="card p-4" style="max-width:600px">
+        <form th:action="${isEdit} ? @{/transactions/{id}/update(id=${form.id})} : @{/transactions}"
+              method="post">
+            <input th:if="${isEdit}" type="hidden" name="id" th:value="${form.id}">
+
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label">날짜 <span class="text-danger">*</span></label>
+                    <input type="date" name="txDate" class="form-control"
+                           th:value="${form.txDate != null ? form.txDate : today}" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">시간</label>
+                    <input type="time" name="txTime" class="form-control"
+                           th:value="${form.txTime}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">가맹점명 <span class="text-danger">*</span></label>
+                    <input type="text" name="merchant" class="form-control"
+                           th:value="${form.merchant}" placeholder="예: 스타벅스 강남점" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">금액 (원) <span class="text-danger">*</span></label>
+                    <input type="number" name="amount" class="form-control"
+                           th:value="${form.amount}" placeholder="5500" min="0" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">카테고리</label>
+                    <select name="categoryId" class="form-select">
+                        <option value="">선택 안함</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id}"
+                                th:text="${cat.icon + ' ' + cat.name}"
+                                th:selected="${cat.id == form.categoryId}">식비</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">메모</label>
+                    <input type="text" name="memo" class="form-control"
+                           th:value="${form.memo}" placeholder="선택 사항">
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success px-4">
+                    <i class="bi bi-save me-1"></i>
+                    <span th:text="${isEdit} ? '수정 완료' : '저장'">저장</span>
+                </button>
+                <a th:href="@{/transactions}" class="btn btn-outline-secondary">취소</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
