@@ -1,228 +1,88 @@
 # 💳 auto_ledger — 현대카드 SMS 자동 가계부
 
-현대카드 결제 문자(SMS)를 MacroDroid가 자동 감지하여 REST API로 전송,
-파싱 후 DB에 저장되는 **완전 자동화 가계부 웹앱**
+> 현대카드 결제 SMS를 Android 자동화 앱이 감지하여 REST API로 전송,
+> 파싱 후 DB에 저장되는 **완전 자동화 가계부 웹앱**
 
 🌐 **배포 URL**: https://auto-leger-production.up.railway.app
+📦 **GitHub**: https://github.com/Limjuhan/auto-leger
 
 ---
 
-## ✨ 주요 기능
-
-| 기능 | 설명 |
-|------|------|
-| 📲 SMS 자동 파싱 | 현대카드 결제 문자 수신 시 MacroDroid가 자동으로 API 호출 |
-| 🗂️ 카테고리 자동 분류 | 가맹점명 키워드 기반으로 식비/교통/쇼핑/의료/문화/기타 분류 |
-| 📊 대시보드 | 이번 달 총 지출 + 카테고리별 도넛 차트 |
-| 📋 거래내역 | 월별 목록 조회, 수동 입력/수정/삭제 |
-| 📈 통계 | 최근 6개월 월별 지출 막대 차트 |
-| ✏️ 수동 입력 | SMS 붙여넣기 파싱 또는 직접 입력 지원 |
-
----
-
-## 🏗️ 아키텍처
+## ⚙️ 자동화 흐름
 
 ```
-[현대카드 결제]
-      ↓ SMS 수신
-[MacroDroid (Android)]
-      ↓ POST /api/notify (Form)
-[Railway 서버 - Spring Boot]
-      ↓ SmsParserService 파싱
-[MySQL DB (Railway)]
-      ↓
-[웹 브라우저 - Thymeleaf]
+현대카드 결제
+    → SMS 수신
+    → MacroDroid (Android) → POST /api/notify
+    → SmsParserService (정규식 파싱)
+    → MySQL 자동 저장
+    → 웹 대시보드 반영
 ```
 
----
-
-## 🛠️ 기술 스택
-
-| 영역 | 기술 |
-|------|------|
-| Backend | Java 17, Spring Boot 3.2.3 |
-| ORM | Spring Data JPA (Hibernate 6) |
-| Database | MySQL 8.x |
-| Frontend | Thymeleaf, Bootstrap 5, Chart.js |
-| Build | Maven |
-| 배포 | Railway (Docker 멀티스테이지 빌드) |
-| 자동화 | MacroDroid (Android) |
+별도 조작 없이 결제 즉시 가계부에 기록됩니다.
 
 ---
 
-## 🚀 로컬 실행 방법
+## 🛠️ 기술 스택 및 선택 근거
 
-### 사전 준비
-- Java 17+
-- MySQL (포트 3307)
-- IntelliJ IDEA (권장)
+| 영역 | 기술 | 선택 근거 |
+|------|------|-----------|
+| Backend | Spring Boot 3.2 | 국내 기업 표준 스택, 빠른 REST API 구성 |
+| ORM | Spring Data JPA | SQL 직접 작성 없이 객체 중심 DB 접근, 유지보수 용이 |
+| Database | MySQL 8 | 관계형 데이터(거래↔카테고리) 표현에 적합, Railway 공식 지원 |
+| Frontend | Thymeleaf | 서버사이드 렌더링으로 별도 API 서버 분리 없이 빠른 개발 가능 |
+| 차트 | Chart.js | 경량 라이브러리, CDN으로 추가 빌드 설정 불필요 |
+| 자동화 | MacroDroid | Android에서 SMS 수신 이벤트를 HTTP 요청으로 연결 가능한 무료 앱 |
+| 배포 | Railway | GitHub 연동 자동 배포, MySQL 내장 제공, 무료 크레딧으로 개인 프로젝트에 적합 |
+| 컨테이너 | Docker | 로컬/서버 환경 차이 없는 일관된 배포 환경 보장 |
 
-### 1. 레포 클론
+---
+
+## 💡 기술적 문제 해결
+
+### 1. MacroDroid JSON 줄바꿈 오류
+SMS 본문의 개행 문자(`\n`)가 JSON 문자열에 그대로 들어가 파싱 오류 발생.
+→ `Content-Type: application/x-www-form-urlencoded` 방식으로 전환하여 URL 인코딩으로 해결.
+→ 하위 호환을 위해 JSON 방식도 별도 엔드포인트로 유지.
+
+### 2. SMS 형식 다양성 대응
+현대카드 SMS는 레이블 있는 형식(가맹점: XXX)과 없는 형식 두 가지가 존재.
+→ 레이블 방식 우선 파싱 후, 실패 시 "금액 줄 앞 줄 탐색" 폴백 로직으로 두 형식 모두 지원.
+
+### 3. Docker ENTRYPOINT 환경변수 치환 오류
+`ENTRYPOINT ["java", "-Dspring.profiles.active=${VAR}"]` exec 형식은 Shell 변수 치환이 되지 않아 항상 로컬 프로필로 실행됨.
+→ Spring Boot의 환경변수 자동 바인딩(`SPRING_PROFILES_ACTIVE`)을 활용하여 `-D` 옵션 제거로 해결.
+
+### 4. JPA 테이블 생성 순서 문제
+`data.sql` 실행 시점이 Hibernate 테이블 생성 이전이어서 카테고리 초기 데이터 INSERT 실패.
+→ `spring.jpa.defer-datasource-initialization: true` 설정으로 테이블 생성 후 SQL 실행 순서 보장.
+
+---
+
+## 주요 기능
+
+- **SMS 자동 파싱**: 레이블/무레이블 두 가지 현대카드 SMS 형식 모두 지원
+- **카테고리 자동 분류**: 가맹점명 키워드 매핑 (식비/교통/쇼핑/의료/문화/기타)
+- **대시보드**: 이번 달 총 지출 + 카테고리별 도넛 차트
+- **거래내역 관리**: 월별 조회, 수동 입력/수정/삭제
+- **월별 통계**: 최근 6개월 지출 추이 막대 차트
+
+---
+
+## 로컬 실행
+
 ```bash
+# 1. 클론
 git clone https://github.com/Limjuhan/auto-leger.git
-cd auto-leger
-```
 
-### 2. MySQL DB 생성
-```sql
-CREATE DATABASE ledger_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+# 2. MySQL DB 생성 (포트 3307)
+CREATE DATABASE ledger_db CHARACTER SET utf8mb4;
 
-### 3. 환경 설정 확인
-`src/main/resources/application.yml`
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3307/ledger_db
-    username: root
-    password: 1234
-```
-
-### 4. 실행
-```bash
+# 3. 실행
 mvn spring-boot:run
-# 또는 IntelliJ에서 LedgerApplication.java 실행
-```
 
-### 5. 접속
-```
+# 4. 접속
 http://localhost:8080
 ```
 
----
-
-## 📡 API 명세
-
-### POST /api/notify — SMS 자동 저장
-
-**MacroDroid용 (Form 방식 권장)**
-```
-Content-Type: application/x-www-form-urlencoded
-Body: rawText={SMS내용}&apiKey={키}
-```
-
-**테스트용 (JSON 방식)**
-```bash
-curl -X POST https://auto-leger-production.up.railway.app/api/notify \
-  -H "Content-Type: application/json" \
-  -d '{"rawText":"[현대카드]\n일시불승인\n홍길동(1234)\n03/12 14:30\n스타벅스\n5500원", "apiKey":"your-api-key"}'
-```
-
-**성공 응답 (200)**
-```json
-{
-  "success": true,
-  "message": "저장 완료",
-  "merchant": "스타벅스",
-  "amount": 5500
-}
-```
-
-**실패 응답 (400)**
-```json
-{
-  "success": false,
-  "message": "금액 또는 가맹점을 인식할 수 없습니다."
-}
-```
-
----
-
-## 📱 SMS 파싱 지원 형식
-
-**형식 A — 레이블 있는 형식**
-```
-[현대카드]
-일시불 승인
-일시 : 25/03/12 14:30
-가맹점 : 스타벅스 강남점
-금액 : 5,500 원
-```
-
-**형식 B — 무레이블 SMS**
-```
-[현대카드]
-일시불승인
-홍길동(1234)
-03/12 14:30
-스타벅스
-5,500원
-```
-
----
-
-## ☁️ Railway 배포
-
-### 환경변수 설정 (auto-ledger 서비스)
-
-| 변수명 | 값 |
-|--------|-----|
-| `SPRING_PROFILES_ACTIVE` | `prod` |
-| `JDBC_DATABASE_URL` | `jdbc:mysql://mysql.railway.internal:3306/railway?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true` |
-| `JDBC_DATABASE_USERNAME` | `root` |
-| `JDBC_DATABASE_PASSWORD` | Railway MySQL 비밀번호 |
-| `LEDGER_API_KEY` | 임의 설정한 API 인증키 |
-
-### 배포 방법
-```bash
-git push  # GitHub push → Railway 자동 재배포
-```
-
----
-
-## 📲 MacroDroid 설정
-
-1. MacroDroid 앱 설치 (Google Play, 무료)
-2. 새 매크로 생성
-3. **트리거**: SMS 수신됨 → 발신자: `현대카드`
-4. **액션**: HTTP 요청
-   - URL: `https://auto-leger-production.up.railway.app/api/notify`
-   - Method: `POST`
-   - Content-Type: `application/x-www-form-urlencoded`
-   - Body: `rawText={sms_body}&apiKey=your-api-key`
-5. 저장 및 활성화
-
----
-
-## 📂 프로젝트 구조
-
-```
-auto_ledger/
-├── src/main/java/com/ledger/
-│   ├── controller/
-│   │   ├── HomeController.java       # 대시보드
-│   │   ├── TransactionController.java # CRUD
-│   │   ├── ManualController.java     # SMS 수동 입력
-│   │   ├── NotifyController.java     # SMS 자동화 API ★
-│   │   └── StatsController.java      # 통계
-│   ├── service/
-│   │   ├── SmsParserService.java     # SMS 파싱 핵심 로직 ★
-│   │   └── TransactionService.java   # 거래내역 CRUD
-│   ├── entity/
-│   │   ├── Transaction.java
-│   │   └── Category.java
-│   ├── repository/
-│   ├── dto/
-│   └── LedgerApplication.java
-├── src/main/resources/
-│   ├── templates/
-│   │   ├── fragments/layout.html     # 공통 레이아웃
-│   │   ├── index.html                # 대시보드
-│   │   ├── transaction/
-│   │   │   ├── manual.html           # SMS 수동 입력
-│   │   │   ├── list.html             # 거래내역 목록
-│   │   │   └── form.html             # 직접 입력/수정
-│   │   └── stats/monthly.html        # 월별 통계
-│   ├── application.yml               # 로컬 설정
-│   ├── application-prod.yml          # Railway 설정
-│   └── data.sql                      # 카테고리 초기 데이터
-├── Dockerfile                        # 멀티스테이지 빌드
-├── CLAUDE.md                         # 프로젝트 지침서
-└── TODO.md                           # 작업 현황
-```
-
----
-
-## 📄 라이선스
-
-개인 프로젝트 — 비상업적 사용
+> `application.yml` 기본 설정: MySQL 127.0.0.1:3307, root/1234, API 키 `my-secret-key-1234`
