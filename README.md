@@ -4,7 +4,9 @@
 > 파싱 후 DB에 저장되는 **완전 자동화 가계부 웹앱**
 
 🌐 **배포 URL**: https://auto-leger-production.up.railway.app
+
 📦 **GitHub**: https://github.com/Limjuhan/auto-leger
+
 ⏱️ **개발 기간**: 1일 (기획 → 구현 → 배포 → 자동화 연동까지)
 
 ---
