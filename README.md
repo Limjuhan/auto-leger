@@ -3,7 +3,7 @@
 > 카드결제 SMS를 Android 자동화 앱이 감지하여 REST API로 전송,
 > 파싱 후 DB에 저장되는 **완전 자동화 가계부 웹앱**
 
-🌐 **배포 URL**: ~~https://auto-leger-production.up.railway.app~~(사용중지)
+🌐 **배포 URL**: ~~https://auto-leger-production.up.railway.app~~ (사용중지)
 
 📦 **GitHub**: https://github.com/Limjuhan/auto-leger
 
